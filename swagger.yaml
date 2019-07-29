@@ -1,0 +1,146 @@
+openapi: 3.0.0
+info:
+  title: Sandbox API
+  description: Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Optional server description, e.g. Development server for testing and development
+
+paths:
+  /users:
+    get:
+      summary: Returns a list of users.
+      tags:
+        - User and Resource
+      description: Optional extended description in CommonMark or HTML.
+      parameters:
+        - $ref: '#/components/parameters/language-code'
+      responses:
+        '200':
+          description: A JSON array of user objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+      
+    post:
+      summary: Creates a new user.
+      tags:
+        - User and Resource
+      description: Optional extended description in CommonMark or HTML.
+      parameters:
+        - $ref: '#/components/parameters/language-code'
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: A JSON with the users attributes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      
+  /users/{user_code}:
+    delete:
+      summary: Returns a list of users.
+      tags:
+        - User and Resource
+      description: Optional extended description in CommonMark or HTML.
+      parameters:
+        - $ref: '#/components/parameters/user_code'
+      responses:
+        '200':
+          description: A JSON array of user objects
+      
+    get:
+      summary: Returns the details of the user.
+      tags:
+        - User and Resource
+      description: Optional extended description in CommonMark or HTML.
+      parameters:
+        - $ref: '#/components/parameters/language-code'
+        - $ref: '#/components/parameters/user_code'
+      responses:
+        '200':
+          description: A JSON with the users attributes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      
+    patch:
+      summary: Returns a list of users.
+      tags:
+        - User and Resource
+      description: Optional extended description in CommonMark or HTML.
+      parameters:
+        - $ref: '#/components/parameters/language-code'
+        - $ref: '#/components/parameters/user_code'
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: A JSON with the users attributes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      
+tags:
+  - name: User and Resource
+    description: Enpoints to interact with resources and users
+
+components:
+  parameters:
+    user_code:
+      name: user_code
+      in: path
+      description: User Code
+      required: true
+      schema:
+        type: string
+        example: username
+    language-code:
+      name: language-code
+      in: header
+      description: Translation fields language code
+      required: true
+      schema:
+        type: string
+        example: pt-br
+  schemas:
+    github.com-andreluzz-swagg-doc-mock-shared-Resource:
+      type: object
+      properties:
+        language-code:
+          type: string
+        role:
+          type: string
+        department:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        resource:
+          $ref: '#/components/schemas/github.com-andreluzz-swagg-doc-mock-shared-Resource'
+        created_date:
+          type: string
