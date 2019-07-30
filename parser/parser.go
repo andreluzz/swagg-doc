@@ -14,10 +14,13 @@ import (
 
 // Parser process the main package and generate the doc
 type Parser struct {
+	apiPackage       string
 	files            map[string]map[string]*gofile
 	globalComponents map[string]string
 	goPath           string
 	processedFiles   map[string]bool
+	interfaces       map[string]string
+	modelsAlias      map[string]string
 }
 
 type gofile struct {
@@ -38,7 +41,7 @@ type endpoint struct {
 }
 
 // New initializate and returns a new Parser
-func New() (*Parser, error) {
+func New(mainPackage string) (*Parser, error) {
 	gopath, err := utils.GetGOPATH()
 	if err != nil {
 		return nil, err
@@ -46,9 +49,12 @@ func New() (*Parser, error) {
 
 	p := &Parser{
 		goPath:           gopath,
+		apiPackage:       mainPackage,
 		files:            make(map[string]map[string]*gofile),
 		globalComponents: make(map[string]string),
+		interfaces:       make(map[string]string),
 		processedFiles:   make(map[string]bool),
+		modelsAlias:      make(map[string]string),
 	}
 
 	return p, nil
@@ -80,17 +86,16 @@ func (p *Parser) Process(packagePath string, externalPackage bool) error {
 
 func parseFileComments(filePath string, parser *Parser, packagePath string, externalPackage bool) error {
 	fileSet := token.NewFileSet()
-	fileTree, err := goparser.ParseFile(fileSet, filePath, nil, goparser.ParseComments)
+	astFile, err := goparser.ParseFile(fileSet, filePath, nil, goparser.ParseComments)
 	if err != nil {
 		return err
 	}
 
-	// Get model definitions
+	// Get model imports
 	imports := make(map[string]string)
 
-	for _, astImport := range fileTree.Imports {
+	for _, astImport := range astFile.Imports {
 		importedPackageName := strings.Trim(astImport.Path.Value, "\"")
-		fmt.Println(importedPackageName)
 
 		var importedPackageAlias string
 		if astImport.Name != nil && astImport.Name.Name != "." && astImport.Name.Name != "_" {
@@ -99,19 +104,19 @@ func parseFileComments(filePath string, parser *Parser, packagePath string, exte
 			importPath := strings.Split(importedPackageName, "/")
 			importedPackageAlias = importPath[len(importPath)-1]
 		}
-		fmt.Println(importedPackageAlias)
-
-		imports[importedPackageAlias] = importedPackageName
+		if !strings.Contains(importedPackageName, parser.apiPackage) {
+			imports[importedPackageAlias] = importedPackageName
+		}
 	}
 
-	// Get model definitions
-	models := make(map[string]*ast.TypeSpec)
+	// Get structs definitions
+	structsDefinitions := make(map[string]*ast.TypeSpec)
 
-	for _, astDeclaration := range fileTree.Decls {
+	for _, astDeclaration := range astFile.Decls {
 		if generalDeclaration, ok := astDeclaration.(*ast.GenDecl); ok && generalDeclaration.Tok == token.TYPE {
 			for _, astSpec := range generalDeclaration.Specs {
 				if typeSpec, ok := astSpec.(*ast.TypeSpec); ok {
-					models[typeSpec.Name.String()] = typeSpec
+					structsDefinitions[typeSpec.Name.String()] = typeSpec
 				}
 			}
 		}
@@ -123,7 +128,7 @@ func parseFileComments(filePath string, parser *Parser, packagePath string, exte
 	}
 	gfAction := "undefined"
 
-	for _, comment := range fileTree.Comments {
+	for _, comment := range astFile.Comments {
 		lines := strings.Split(comment.Text(), "\n")
 		valid, action := parseSwaggDocCommand(lines[0])
 		if valid {
@@ -139,6 +144,13 @@ func parseFileComments(filePath string, parser *Parser, packagePath string, exte
 				if gf.controller != nil {
 					return fmt.Errorf("only one swagg-doc:controller can be defined per page")
 				}
+				for _, path := range imports {
+					if strings.Contains(path, "mock") {
+						if err := parser.Process(path, true); err != nil {
+							return err
+						}
+					}
+				}
 				gf.controller = &controller{}
 				if err := parseController(lines, gf); err != nil {
 					return err
@@ -151,12 +163,9 @@ func parseFileComments(filePath string, parser *Parser, packagePath string, exte
 					return err
 				}
 			case "model":
-				if parser.files["model"][filePath] != nil {
-					return nil
-				}
 				fields := strings.Fields(lines[0])
-				if typeSpec, ok := models[fields[0]]; ok {
-					if err := parseModel(lines, gf, parser, typeSpec, imports, packagePath, externalPackage); err != nil {
+				if typeSpec, ok := structsDefinitions[fields[0]]; ok {
+					if err := parseStructDefinition(lines, gf, parser, typeSpec, imports, packagePath, externalPackage); err != nil {
 						return err
 					}
 				}
