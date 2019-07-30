@@ -11,7 +11,7 @@ var pkg = flag.String("package", "github.com/andreluzz/swagg-doc/mock/api", "The
 
 func main() {
 	flag.Parse()
-	p, err := parser.New()
+	p, err := parser.New(*pkg)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

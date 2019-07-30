@@ -16,7 +16,10 @@ package controller
 //       example: username
 
 import (
+	"encoding/json"
 	"net/http"
+
+	"github.com/andreluzz/swagg-doc/mock/response"
 )
 
 // GetUsers swagg-doc:endpoint GET /users
@@ -32,11 +35,17 @@ import (
 //     content:
 //       application/json:
 //         schema:
-//           type: array
-//           items:
-//             $ref: '#/components/schemas/User'
+//           $ref: '#/components/schemas/swagg-doc:interface:Response:User:Array'
+//   '400':
+//     description: A JSON array of user objects
+//     content:
+//       application/json:
+//         schema:
+//           $ref: '#/components/schemas/swagg-doc:interface:Response:User:Array'
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("dummy"))
+	response := response.Response{}
+	respBytes, _ := json.Marshal(response)
+	w.Write(respBytes)
 }
 
 // PostUser swagg-doc:endpoint POST /users
@@ -54,16 +63,18 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 //   content:
 //     application/json:
 //       schema:
-//         $ref: '#/components/schemas/User'
+//         $ref: '#/components/schemas/UserCreate'
 // responses:
 //   '200':
 //     description: A JSON with the users attributes
 //     content:
 //       application/json:
 //         schema:
-//           $ref: '#/components/schemas/User'
+//           $ref: '#/components/schemas/swagg-doc:interface:Response:User'
 func PostUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("dummy"))
+	response := response.Response{}
+	respBytes, _ := json.Marshal(response)
+	w.Write(respBytes)
 }
 
 // GetUser swagg-doc:endpoint GET /users/{user_code}
@@ -80,9 +91,11 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 //     content:
 //       application/json:
 //         schema:
-//           $ref: '#/components/schemas/User'
+//           $ref: '#/components/schemas/swagg-doc:interface:Response:User'
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("dummy"))
+	response := response.Response{}
+	respBytes, _ := json.Marshal(response)
+	w.Write(respBytes)
 }
 
 // UpdateUser swagg-doc:endpoint PATCH /users/{user_code}
@@ -101,16 +114,27 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 //   content:
 //     application/json:
 //       schema:
-//         $ref: '#/components/schemas/User'
+//         $ref: '#/components/schemas/UserUpdate'
+//       examples:
+//         Jessica:
+//           value:
+//             id: 10
+//             name: Jessica Smith
+//         Ron:
+//           value:
+//             id: 11
+//             name: Ron Stewart
 // responses:
 //   '200':
 //     description: A JSON with the users attributes
 //     content:
 //       application/json:
 //         schema:
-//           $ref: '#/components/schemas/User'
+//           $ref: '#/components/schemas/swagg-doc:interface:Response:User'
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("dummy"))
+	response := response.Response{}
+	respBytes, _ := json.Marshal(response)
+	w.Write(respBytes)
 }
 
 // DeleteUser swagg-doc:endpoint DELETE /users/{user_code}
@@ -126,5 +150,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 //   '200':
 //     description: A JSON array of user objects
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("dummy"))
+	response := response.Response{}
+	respBytes, _ := json.Marshal(response)
+	w.Write(respBytes)
 }
