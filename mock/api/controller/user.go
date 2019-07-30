@@ -46,6 +46,8 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 // description: Optional extended description in CommonMark or HTML.
 // parameters:
 //   - $ref: '#/components/parameters/language-code'
+// security:
+//   - ApiKeyAuth: []
 // requestBody:
 //   description: Optional description in *Markdown*
 //   required: true
@@ -91,6 +93,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // parameters:
 //   - $ref: '#/components/parameters/language-code'
 //   - $ref: '#/components/parameters/user_code'
+// security:
+//   - ApiKeyAuth: []
 // requestBody:
 //   description: Optional description in *Markdown*
 //   required: true
@@ -116,6 +120,8 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // description: Optional extended description in CommonMark or HTML.
 // parameters:
 //   - $ref: '#/components/parameters/user_code'
+// security:
+//   - ApiKeyAuth: []
 // responses:
 //   '200':
 //     description: A JSON array of user objects

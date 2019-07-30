@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/andreluzz/sandbox/swagg-doc/utils"
+	"github.com/andreluzz/swagg-doc/utils"
 )
 
 // Parser process the main package and generate the doc

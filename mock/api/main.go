@@ -10,6 +10,12 @@ package main
 //   - url: http://localhost:8080/api/v1
 //     description: Optional server description, e.g. Development server for testing and development
 //
+// securitySchemes:
+//   ApiKeyAuth:
+//     type: apiKey
+//     in: header
+//     name: Authentication
+//
 // parameters:
 //   language-code:
 //     name: language-code
