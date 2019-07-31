@@ -62,7 +62,7 @@ func New(mainPackage string) (*Parser, error) {
 
 // Process analyse go code for comments.
 // Only commnets where the first line has swagg-doc willl be processed.
-func (p *Parser) Process(packagePath string, externalPackage bool) error {
+func (p *Parser) Process(packagePath, importScope string, externalPackage bool) error {
 	packageFullPath := fmt.Sprintf("%s/src/%s", p.goPath, packagePath)
 	err := filepath.Walk(packageFullPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -71,7 +71,7 @@ func (p *Parser) Process(packagePath string, externalPackage bool) error {
 		}
 		if _, processed := p.processedFiles[path]; !processed && !info.IsDir() && filepath.Ext(info.Name()) == ".go" {
 			p.processedFiles[path] = true
-			if err := parseFileComments(path, p, packagePath, externalPackage); err != nil {
+			if err := parseFileComments(path, p, packagePath, importScope, externalPackage); err != nil {
 				return err
 			}
 		}
@@ -84,7 +84,7 @@ func (p *Parser) Process(packagePath string, externalPackage bool) error {
 	return nil
 }
 
-func parseFileComments(filePath string, parser *Parser, packagePath string, externalPackage bool) error {
+func parseFileComments(filePath string, parser *Parser, packagePath, importScope string, externalPackage bool) error {
 	fileSet := token.NewFileSet()
 	astFile, err := goparser.ParseFile(fileSet, filePath, nil, goparser.ParseComments)
 	if err != nil {
@@ -145,9 +145,12 @@ func parseFileComments(filePath string, parser *Parser, packagePath string, exte
 					return fmt.Errorf("only one swagg-doc:controller can be defined per page")
 				}
 				for _, path := range imports {
-					if strings.Contains(path, "mock") {
-						if err := parser.Process(path, true); err != nil {
-							return err
+					scopes := strings.Split(importScope, ",")
+					for _, scope := range scopes {
+						if strings.Contains(path, scope) {
+							if err := parser.Process(path, importScope, true); err != nil {
+								return err
+							}
 						}
 					}
 				}
@@ -165,7 +168,7 @@ func parseFileComments(filePath string, parser *Parser, packagePath string, exte
 			case "model":
 				fields := strings.Fields(lines[0])
 				if typeSpec, ok := structsDefinitions[fields[0]]; ok {
-					if err := parseStructDefinition(lines, gf, parser, typeSpec, imports, packagePath, externalPackage); err != nil {
+					if err := parseStructDefinition(lines, gf, parser, typeSpec, imports, packagePath, importScope, externalPackage); err != nil {
 						return err
 					}
 				}

@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-func parseStructDefinition(lines []string, gf *gofile, parser *Parser, typeSpec *ast.TypeSpec, imports map[string]string, packagePath string, externalPackage bool) error {
+func parseStructDefinition(lines []string, gf *gofile, parser *Parser, typeSpec *ast.TypeSpec, imports map[string]string, packagePath, importScope string, externalPackage bool) error {
 
 	// process comment attribute definitions
 	attributes := make(map[string]string, len(lines))
-	ignore := make(map[string]bool, len(lines))
+	ignore := make(map[string]string, len(lines))
 	for _, line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) > 1 && strings.Contains(fields[1], "swagg-doc:attribute") {
@@ -19,10 +19,13 @@ func parseStructDefinition(lines []string, gf *gofile, parser *Parser, typeSpec 
 			if len(params) < 3 {
 				return fmt.Errorf("invalid swagg-doc:attribute tag | %s", gf.filepath)
 			}
-			if params[2] == "ignore_write" {
-				ignore[fields[0]] = true
-			} else {
-				attributes[fields[0]] = params[2]
+			attrs := strings.Split(fields[0], ",")
+			for _, att := range attrs {
+				if strings.HasPrefix(params[2], "ignore") {
+					ignore[att] = params[2]
+				} else {
+					attributes[att] = params[2]
+				}
 			}
 		}
 	}
@@ -30,14 +33,14 @@ func parseStructDefinition(lines []string, gf *gofile, parser *Parser, typeSpec 
 	fields := strings.Fields(lines[0])
 	isModuleInterface := len(fields) > 1 && strings.HasPrefix(fields[1], "swagg-doc:model:interface")
 
-	if err := createSchemaModule("", lines, gf, parser, typeSpec, imports, packagePath, externalPackage, ignore, attributes, isModuleInterface); err != nil {
+	if err := createSchemaModule("", lines, gf, parser, typeSpec, imports, packagePath, importScope, externalPackage, ignore, attributes, isModuleInterface); err != nil {
 		return err
 	}
 	if !isModuleInterface {
-		if err := createSchemaModule("Update", lines, gf, parser, typeSpec, imports, packagePath, externalPackage, ignore, attributes, isModuleInterface); err != nil {
+		if err := createSchemaModule("Update", lines, gf, parser, typeSpec, imports, packagePath, importScope, externalPackage, ignore, attributes, isModuleInterface); err != nil {
 			return err
 		}
-		if err := createSchemaModule("Create", lines, gf, parser, typeSpec, imports, packagePath, externalPackage, ignore, attributes, isModuleInterface); err != nil {
+		if err := createSchemaModule("Create", lines, gf, parser, typeSpec, imports, packagePath, importScope, externalPackage, ignore, attributes, isModuleInterface); err != nil {
 			return err
 		}
 	}
@@ -45,7 +48,7 @@ func parseStructDefinition(lines []string, gf *gofile, parser *Parser, typeSpec 
 	return nil
 }
 
-func createSchemaModule(sufix string, lines []string, gf *gofile, parser *Parser, typeSpec *ast.TypeSpec, imports map[string]string, packagePath string, externalPackage bool, ignore map[string]bool, attributes map[string]string, isModelInterface bool) error {
+func createSchemaModule(sufix string, lines []string, gf *gofile, parser *Parser, typeSpec *ast.TypeSpec, imports map[string]string, packagePath, importScope string, externalPackage bool, ignore map[string]string, attributes map[string]string, isModelInterface bool) error {
 	var builder strings.Builder
 	modelPath := typeSpec.Name.String()
 	if externalPackage {
@@ -71,7 +74,7 @@ func createSchemaModule(sufix string, lines []string, gf *gofile, parser *Parser
 			if strings.Contains(structTag.Get("validate"), "required") {
 				attRequired = append(attRequired, jsonName)
 			}
-			if _, match := ignore[jsonName]; match && sufix != "" {
+			if val, match := ignore[jsonName]; match && (val == "ignore" || sufix != "") {
 				continue
 			}
 			if sufix == "Update" && structTag.Get("updatable") == "false" {
@@ -102,7 +105,7 @@ func createSchemaModule(sufix string, lines []string, gf *gofile, parser *Parser
 				builder.WriteString(fieldType[1])
 				builder.WriteString(sufix)
 				builder.WriteString("'")
-				if err := parser.Process(importPath, true); err != nil {
+				if err := parser.Process(importPath, importScope, true); err != nil {
 					return err
 				}
 			} else {
@@ -180,7 +183,7 @@ func getTypeAsString(fieldType interface{}) string {
 }
 
 func isStruct(t string) bool {
-	return t != "string" && t != "integer" && t != "bool"
+	return t != "string" && t != "integer" && t != "bool" && t != "interface"
 }
 
 func getAlias(line string) string {
